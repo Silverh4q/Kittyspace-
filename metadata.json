@@ -1,0 +1,6 @@
+{
+  "name": "KittySpace",
+  "description": "Virtual space for games/apps with live terminal engine dumper (Unity/Unreal).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
