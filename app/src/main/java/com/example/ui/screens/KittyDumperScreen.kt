@@ -4,6 +4,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -71,6 +73,7 @@ fun KittyDumperScreen(
     
     var showAppSelector by remember { mutableStateOf(false) }
     var selectedViewDump by remember { mutableStateOf<DumpHistory?>(null) }
+    var activeViewerSourceType by remember { mutableStateOf<String?>(null) } // "CPP", "CS" or null
     
     val listState = rememberLazyListState()
 
@@ -728,6 +731,86 @@ fun KittyDumperScreen(
                 }
             }
         }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "III. NATIVE DIAGNOSTIC TOOLCHAIN SOURCE",
+                    color = textMuted,
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CardBackground),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.2.dp, CyberCyan.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "AIDE Compiler & Unity Native Codes",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Get expert C++ memory scanners and C# metadata parsers to implement on-device injectors or within Unity. Open they directly or tap below to browse/copy source.",
+                            color = textMuted,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = { activeViewerSourceType = "CPP" },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F2C33)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Terminal, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("C++ JNI", color = Color.White, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                            }
+
+                            Button(
+                                onClick = { activeViewerSourceType = "CS" },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF330F25)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Code, contentDescription = null, tint = CyberPink, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Unity C#", color = Color.White, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                            }
+                        }
+
+                        // Inform path on device
+                        Text(
+                            text = "💾 Paths on device:\n• SourceCodes: virtual_sandbox/Source_Codes_Download/\n• Compiled saves: /sdcard/KittySpy/Saves/",
+                            color = MatrixGreen,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            lineHeight = 14.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF040108))
+                                .padding(8.dp)
+                                .border(0.5.dp, Color(0xFF231048), RoundedCornerShape(4.dp))
+                        )
+                    }
+                }
+            }
+        }
     }
 
     // VIRTUAL FILE DIRECTORY EXPLORER DIALOG representation
@@ -1111,6 +1194,117 @@ fun KittyDumperScreen(
                             .padding(12.dp)
                     ) {
                         Text("Exit SDK Viewer", color = SpaceBackground, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+
+    if (activeViewerSourceType != null) {
+        val titleText = if (activeViewerSourceType == "CPP") "kittyspy_dumper.cpp (C++)" else "KittySpyExtractor.cs (C#)"
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val fileContent = try {
+            val assetPath = if (activeViewerSourceType == "CPP") "native_source/kittyspy_dumper.cpp" else "native_source/KittySpyExtractor.cs"
+            context.assets.open(assetPath).bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            "// Source Code Load Error: " + e.localizedMessage
+        }
+
+        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+        Dialog(onDismissRequest = { activeViewerSourceType = null }) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CardBackground),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .border(2.dp, if (activeViewerSourceType == "CPP") CyberCyan else CyberPink, RoundedCornerShape(16.dp))
+                    .padding(4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = titleText,
+                            color = if (activeViewerSourceType == "CPP") CyberCyan else CyberPink,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp
+                        )
+                        IconButton(onClick = { activeViewerSourceType = null }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = textMuted)
+                        }
+                    }
+
+                    Text(
+                        text = if (activeViewerSourceType == "CPP")
+                            "Native Arm64 memory diagnostic library. Ready to compile with NDK or include in AIDE."
+                        else "Unity Editor diagnostic helper tool. Drag into Assets/Editor in Unity.",
+                        color = textMuted,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // Code viewer panel
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF040108))
+                            .border(1.dp, Color(0xFF281350), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        val scrollState = rememberScrollState()
+                        Text(
+                            text = fileContent,
+                            color = MatrixGreen,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(scrollState)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(fileContent))
+                                android.widget.Toast.makeText(context, "Code copied to clipboard!", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (activeViewerSourceType == "CPP") CyberCyan else CyberPink
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = SpaceBackground, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Copy Code", color = SpaceBackground, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = { activeViewerSourceType = null },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF221144)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(0.7f)
+                        ) {
+                            Text("Close", color = Color.White, fontSize = 12.sp)
+                        }
                     }
                 }
             }

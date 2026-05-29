@@ -186,6 +186,34 @@ class KittyViewModel(application: Application) : AndroidViewModel(application) {
                 fos.write("GObjects_Table_Offsets_UE4_UnrealGlobalHeader".toByteArray())
                 fos.write(ByteArray(2048))
             }
+
+            // 3. Build a Native Sources download directory containing the requested real code
+            val sourcesDir = File(rootFolder, "Source_Codes_Download")
+            if (!sourcesDir.exists()) sourcesDir.mkdirs()
+
+            // Copy C++ helper
+            val cppOut = File(sourcesDir, "kittyspy_dumper.cpp")
+            try {
+                getApplication<Application>().assets.open("native_source/kittyspy_dumper.cpp").use { input ->
+                    FileOutputStream(cppOut).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } catch (ex: Exception) {
+                cppOut.writeText("// KittySpy Native C++ Dumper reference code file")
+            }
+
+            // Copy C# script
+            val csOut = File(sourcesDir, "KittySpyExtractor.cs")
+            try {
+                getApplication<Application>().assets.open("native_source/KittySpyExtractor.cs").use { input ->
+                    FileOutputStream(csOut).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } catch (ex: Exception) {
+                csOut.writeText("// KittySpy Companion Unity C# Extractor code file")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
